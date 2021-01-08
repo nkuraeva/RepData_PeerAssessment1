@@ -1,120 +1,157 @@
 ---
-title: "Reproducible Research Project 1"
-author: "Natalia Kuraeva"
-date: "1/8/2021"
-output: html_document
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
-## 1. Loading and preprocessing the data
+## Loading and preprocessing the data
 
-```{r Preprocessing}
+
+```r
 unzip_data <- unzip("activity.zip")
 activity <- read.csv(unzip_data)
+summary(activity)
 ```
 
-Exploring the basics of the data
+```
+##      steps            date              interval     
+##  Min.   :  0.00   Length:17568       Min.   :   0.0  
+##  1st Qu.:  0.00   Class :character   1st Qu.: 588.8  
+##  Median :  0.00   Mode  :character   Median :1177.5  
+##  Mean   : 37.38                      Mean   :1177.5  
+##  3rd Qu.: 12.00                      3rd Qu.:1766.2  
+##  Max.   :806.00                      Max.   :2355.0  
+##  NA's   :2304
+```
 
-```{r}
-str(activity)
-summary(activity)
+```r
 # transforming the date column into date format using lubridate
 library(lubridate)
-activity$date <- ymd(activity$date)
-length(unique(activity$date))
 ```
 
-## 2. 3. Mean total number of steps taken per day
+```
+## 
+## Attaching package: 'lubridate'
+```
 
-```{r}
+```
+## The following objects are masked from 'package:base':
+## 
+##     date, intersect, setdiff, union
+```
+
+```r
+activity$date <- ymd(activity$date)
+```
+
+## What is mean total number of steps taken per day?
+
+```r
 # create a table "number of steps taken per day"
 total_steps <- with(activity, aggregate(activity$steps, by = list(activity$date), FUN = sum, na.rm = TRUE))
 names(total_steps) <- c("date", "steps")
 # create the histogram
 hist(total_steps$steps, main = "Total number of steps taken per day", xlab = "Total steps taken per day", col = "lightgreen", breaks = seq(0,25000,by=1250))
 ```
-. The *mean* of the total number of steps taken per day:
 
-```{r}
+![](PA1_template_files/figure-html/unnamed-chunk-1-1.png)<!-- -->
+The *mean* of the total number of steps taken per day:
+
+
+```r
 mean(total_steps$steps)
 ```
 
-. The *median* of the total number of steps taken per day:
+```
+## [1] 9354.23
+```
 
-```{r}
+The *median* of the total number of steps taken per day:
+
+
+```r
 median(total_steps$steps)
 ```
 
-## 4. Time series plot of the average number of steps taken
+```
+## [1] 10395
+```
 
-Make a time series plot (i.e. type = “l”) of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
-```{r}
+## What is the average daily activity pattern?
+
+
+```r
 average_number_steps <- aggregate(activity$steps, by=list(activity$interval), FUN=mean, na.rm=TRUE)
 names(average_number_steps) <- c("interval", "mean")
 plot(average_number_steps$interval, average_number_steps$mean, type = "l", col="green", lwd = 2, xlab="Interval", ylab="Average number of steps", main="Average number of steps per intervals")
 ```
 
-## 5. The 5-minute interval that, on average, contains the maximum number of steps
+![](PA1_template_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+The 5-minute interval that, on average, contains the maximum number of steps
 
-```{r}
+
+```r
 average_number_steps[which.max(average_number_steps$mean), ]$interval
 ```
 
-## 6. Describe and show a strategy for imputing missing data
-
-Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
-
-```{r}
-sum(is.na(activity$steps))
+```
+## [1] 835
 ```
 
-There are multiple strategies to deal with multiple value imputations.
-The common strategies include:
-1. Constant value imputations
-2. Regression model value imputations
-3. Mean/mode value substitutions
-Сhoose the last one.
+## Imputing missing values
 
-```{r}
+```r
 imputed_steps <- average_number_steps$mean[match(activity$interval, average_number_steps$interval)]
 ```
 
 Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
-```{r}
+
+```r
 activity_imputed <- transform(activity, steps = ifelse(is.na(activity$steps), yes = imputed_steps, no = activity$steps))
 total_steps_imputed <- aggregate(steps ~ date, activity_imputed, sum)
 names(total_steps_imputed) <- c("date", "daily_steps")
 ```
+Create a histogram of the total number of steps taken each day
 
-## 7. Create a histogram of the total number of steps taken each day
-```{r}
+```r
 hist(total_steps_imputed$daily_steps, col = "lightblue", xlab = "Total steps per day", main = "Total number of steps taken each day", breaks = seq(0,25000,by=1250))
 ```
 
-. The mean of the total number of steps taken per day:
-```{r}
+![](PA1_template_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
+The mean of the total number of steps taken per day:
+
+```r
 mean(total_steps_imputed$daily_steps)
 ```
 
-. The median of the total number of steps taken per day:
+```
+## [1] 10766.19
+```
 
-```{r}
+The median of the total number of steps taken per day:
+
+
+```r
 median(total_steps_imputed$daily_steps)
+```
+
+```
+## [1] 10766.19
 ```
 
 Imputing missing data have only a little and transcurable impact on the mean ant the median of the total daily number of steps. Watching the histogram we can note than the only bin that is changed is the interval between 0 and 1250 steps. Different methods for replace missing values could cause different results.
 
-## 8. Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+## Are there differences in activity patterns between weekdays and weekends?
 
 1. Create a new factor variable in the dataset with two levels - “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 *DayType* is the new column indicating if the day is a weekday day or a weekend day: the first ten values of the new table are shown below
 
-```{r}
+
+```r
 # create a variable with weekdays name
 activity_imputed$weekday <- weekdays(activity_imputed$date)
 # create a new variable indicating weekday or weekend
@@ -123,7 +160,8 @@ activity_imputed$day_type <- ifelse(activity_imputed$weekday=='Saturday' | activ
 
 2. Two time series plot of the 5-minute interval (x) and the average number of steps taken averaged across weekday days or weekend days (y).
 
-```{r}
+
+```r
 # create table with steps per time across weekdaydays or weekend days
 steps_day_type <- aggregate(steps~interval+day_type, activity_imputed, mean, na.rm = TRUE)
 # variable time (more comprensible for the graph axis)
@@ -136,3 +174,5 @@ plot<- ggplot(steps_day_type, aes(x = interval , y = steps, color = day_type)) +
        facet_wrap(~day_type, ncol = 1, nrow=2)
 print(plot)
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-12-1.png)<!-- -->

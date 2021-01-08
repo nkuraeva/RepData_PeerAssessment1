@@ -5,8 +5,7 @@ date: "1/8/2021"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE, echo=TRUE}
 ```
 
 ## 1. Loading and preprocessing the data
